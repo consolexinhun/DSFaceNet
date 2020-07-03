@@ -4,7 +4,6 @@ import os
 import torch
 import sys
 sys.path.append('..')
-from config import CASIA_DATA_DIR
 import imageio
 from PIL import Image
 

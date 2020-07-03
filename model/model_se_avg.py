@@ -1,10 +1,12 @@
 import torch
 from torch import nn
 from torchsummary import summary
-from config import *
 import math
 import torch.nn.functional as F
 from torch.nn import Parameter
+import sys
+sys.path.append("..")
+from  config import *
 '''
 SE block
 '''
@@ -87,7 +89,7 @@ Mobilefacenet_bottleneck_setting = [
     # t, c , n ,s
     [2, 64, 5, 2],
     [4, 128, 1, 2],
-    [2, 128, 6, 1],
+    # [2, 128, 6, 1],
     [4, 128, 1, 2],
     [2, 128, 2, 1]
 ]
