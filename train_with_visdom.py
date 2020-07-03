@@ -9,8 +9,7 @@ from eval_flw import parseList, evaluation_10_fold
 import numpy as np
 import scipy.io
 from tqdm import tqdm
-from torch import nn
-from torch import optim
+import visdom
 
 torch.manual_seed(1234)
 
@@ -26,31 +25,28 @@ nl, nr, folds, flags = parseList(root=LFW_DATA_DIR)
 testdataset = LFW(nl, nr)
 testloader = torch.utils.data.DataLoader(testdataset, batch_size=32,shuffle=False, num_workers=8, drop_last=False)
 
-print("dataset loaded!")
-
-
 device = DEVICE
 net = model_se_avg.DSFaceNet()
 arcmargin = model_se_avg.ArcMarginProduct(128, trainset.class_nums)
 
-ignored_params = list(map(id, net.linear1.parameters()))
-ignored_params += list(map(id, arcmargin.weight))
-prelu_params_id = []
-prelu_params = []
-for m in net.modules():
-    if isinstance(m, nn.PReLU):
-        ignored_params += list(map(id, m.parameters()))
-        prelu_params += m.parameters()
-base_params = filter(lambda p: id(p) not in ignored_params, net.parameters())
+# ignored_params = list(map(id, net.linear1.parameters()))
+# ignored_params += list(map(id, arcmargin.weight))
+# prelu_params_id = []
+# prelu_params = []
+# for m in net.modules():
+#     if isinstance(m, nn.PReLU):
+#         ignored_params += list(map(id, m.parameters()))
+#         prelu_params += m.parameters()
+# base_params = filter(lambda p: id(p) not in ignored_params, net.parameters())
 
-optimizer_ft = optim.SGD([
-    {'params': base_params, 'weight_decay': 4e-5},
-    {'params': net.linear1.parameters(), 'weight_decay': 4e-4},
-    {'params': arcmargin.weight, 'weight_decay': 4e-4},
-    {'params': prelu_params, 'weight_decay': 0.0}
-], lr=0.1, momentum=0.9, nesterov=True)
+# optimizer_ft = optim.SGD([
+#     {'params': base_params, 'weight_decay': 4e-5},
+#     {'params': net.linear1.parameters(), 'weight_decay': 4e-4},
+#     {'params': arcmargin.weight, 'weight_decay': 4e-4},
+#     {'params': prelu_params, 'weight_decay': 0.0}
+# ], lr=0.1, momentum=0.9, nesterov=True)
 
-# optimizer_ft = torch.optim.Adam(net.parameters(),lr=1e-3)
+optimizer_ft = torch.optim.Adam(net.parameters(),lr=1e-3)
 
 # 学习率衰减
 exp_lr_scheduler = lr_scheduler.MultiStepLR(optimizer_ft, milestones=[36, 52, 58], gamma=0.1)
@@ -68,6 +64,9 @@ if RESUME: # 从上次中断的地方继续训练
 
 best_acc = 0.0
 best_epoch = 0
+vis = visdom.Visdom()
+vis.line([0.], [0.], win="train_loss", opts=dict(title="train loss"))
+vis.line([0.], [0.], win="val_acc", opts=dict(title="val acc"))
 for epoch in tqdm(range(start_epoch, TOTAL_EPOCH+1)):
     print('Train Epoch: {}/{} ...'.format(epoch, TOTAL_EPOCH))
     net.train()
@@ -91,6 +90,7 @@ for epoch in tqdm(range(start_epoch, TOTAL_EPOCH+1)):
 
     train_total_loss = train_total_loss / total
     print('total_loss: {:.4f} '.format(train_total_loss)) # 训练平均损失
+    vis.line([train_total_loss], [epoch], win="train_loss", update="append")
 
     if epoch % TEST_FREQ == 0: # 测试
         net.eval()
@@ -116,6 +116,7 @@ for epoch in tqdm(range(start_epoch, TOTAL_EPOCH+1)):
         scipy.io.savemat(SAVE_FEATURE_FILENAME, result)
         accs = evaluation_10_fold(SAVE_FEATURE_FILENAME)
         print('ave: {:.4f}'.format(np.mean(accs) * 100))
+        vis.line([np.mean(accs)], [epoch], win="val_acc", update="append")
 
         if np.mean(accs) > best_acc:
             best_epoch = epoch
