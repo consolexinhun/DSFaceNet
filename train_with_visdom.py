@@ -16,7 +16,7 @@ from torch import optim
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("vis", type=bool,default=False, help="是否要使用visdom工具")
+parser.add_argument("-v","--vis", type=bool,default=False, help="是否要使用visdom工具")
 args = parser.parse_args()
 
 torch.manual_seed(1234)
