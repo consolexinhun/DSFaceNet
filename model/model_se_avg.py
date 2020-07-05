@@ -85,17 +85,16 @@ class ConvBlock(nn.Module):
         else:
             return self.prelu(x)
 
-Mobilefacenet_bottleneck_setting = [
+setting = [
     # t, c , n ,s
     [2, 64, 5, 2],
     [4, 128, 1, 2],
-    # [2, 128, 6, 1],
     [4, 128, 1, 2],
     [2, 128, 2, 1]
 ]
 
 class DSFaceNet(nn.Module):
-    def __init__(self, bottleneck_setting=Mobilefacenet_bottleneck_setting):
+    def __init__(self, bottleneck_setting=setting):
         super(DSFaceNet, self).__init__()
 
         self.conv1 = ConvBlock(3, 64, 3, 2, 1)
